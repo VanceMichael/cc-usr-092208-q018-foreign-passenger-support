@@ -8,7 +8,13 @@
     "sample_id",
     "actors",
     "facts",
-    "constraints"
+    "constraints",
+    "channels",
+    "continuity",
+    "consent",
+    "disambiguation",
+    "privacy",
+    "audit"
   ],
   "properties": {
     "domain": {
@@ -43,6 +49,151 @@
       "items": {
         "type": "string"
       }
+    },
+    "channels": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "kind"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "name": { "type": "string", "minLength": 1 },
+          "kind": {
+            "type": "string",
+            "enum": ["online_staff", "station_window", "offline_backfill"]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "continuity": {
+      "type": "object",
+      "required": ["handover", "carry_on", "require_consent", "same_request_across_channels"],
+      "properties": {
+        "handover": { "type": "string", "minLength": 1 },
+        "carry_on": {
+          "type": "array",
+          "minItems": 6,
+          "items": { "type": "string" },
+          "contains": {
+            "enum": ["证件版本", "核验结果", "购票身份", "行程关联", "多语种求助", "人工处置"]
+          }
+        },
+        "require_consent": { "type": "boolean", "const": true },
+        "same_request_across_channels": { "type": "boolean", "const": true }
+      },
+      "additionalProperties": false
+    },
+    "consent": {
+      "type": "object",
+      "required": ["holder", "scopes", "revocable", "on_revocation"],
+      "properties": {
+        "holder": { "type": "string", "minLength": 1 },
+        "scopes": {
+          "type": "array",
+          "minItems": 6,
+          "items": {
+            "type": "object",
+            "required": ["category", "purpose", "allowed"],
+            "properties": {
+              "category": { "type": "string", "minLength": 1 },
+              "purpose": { "type": "string", "minLength": 1 },
+              "allowed": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "revocable": { "type": "boolean", "const": true },
+        "on_revocation": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "disambiguation": {
+      "type": "object",
+      "required": ["rules", "confidence_floor", "low_confidence_to_human"],
+      "properties": {
+        "rules": {
+          "type": "array",
+          "minItems": 4,
+          "items": {
+            "type": "object",
+            "required": ["case", "policy", "requires_human"],
+            "properties": {
+              "case": {
+                "type": "string",
+                "enum": ["姓名近似", "同行家庭", "跨境行程", "离线窗口补录"]
+              },
+              "policy": { "type": "string", "minLength": 1 },
+              "requires_human": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "confidence_floor": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "exclusiveMaximum": 1
+        },
+        "low_confidence_to_human": { "type": "boolean", "const": true }
+      },
+      "additionalProperties": false
+    },
+    "privacy": {
+      "type": "object",
+      "required": [
+        "station_view_minimum",
+        "excluded_data",
+        "retention_limit",
+        "after_document_update",
+        "after_consent_revoked"
+      ],
+      "properties": {
+        "station_view_minimum": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "excluded_data": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "contains": { "const": "与本次出行无关的签证资料" }
+        },
+        "retention_limit": { "type": "string", "minLength": 1 },
+        "after_document_update": { "type": "string", "minLength": 1 },
+        "after_consent_revoked": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "audit": {
+      "type": "object",
+      "required": ["detectable_risks", "traceable_from", "trace_targets"],
+      "properties": {
+        "detectable_risks": {
+          "type": "array",
+          "minItems": 3,
+          "items": { "type": "string" },
+          "contains": {
+            "enum": ["错误合并", "越权查阅", "超期保留"]
+          }
+        },
+        "traceable_from": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "contains": { "const": "退改结果" }
+        },
+        "trace_targets": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "type": "string" },
+          "contains": {
+            "enum": ["真实授权", "核验过程"]
+          }
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

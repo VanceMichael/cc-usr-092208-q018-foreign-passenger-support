@@ -1,6 +1,6 @@
 {
   "domain": "foreign-passenger-support",
-  "version": 1,
+  "version": 2,
   "sample_id": "record-018",
   "actors": [
     "外籍铁路旅客",
@@ -11,12 +11,144 @@
   "facts": [
     "铁路部门适应过境免签带来的客流增长",
     "全国铁路发送外籍旅客同比显著增长",
-    "铁路部门为外籍旅客出行提供便利"
+    "铁路部门为外籍旅客出行提供便利",
+    "外籍旅客在线上客服与车站窗口之间转换时需要重复解释证件信息",
+    "工作人员手工合并旅客档案曾造成他人车票被错误退改"
   ],
   "constraints": [
     "证件版本核验",
     "旅客身份消歧",
     "跨渠道服务接续",
-    "隐私审计"
-  ]
+    "隐私审计",
+    "本人同意与撤回",
+    "最小必要可见",
+    "低置信度人工确认"
+  ],
+  "channels": [
+    {
+      "id": "online-staff",
+      "name": "线上客服",
+      "kind": "online_staff"
+    },
+    {
+      "id": "station-window",
+      "name": "车站窗口",
+      "kind": "station_window"
+    },
+    {
+      "id": "offline-window",
+      "name": "离线窗口补录",
+      "kind": "offline_backfill"
+    }
+  ],
+  "continuity": {
+    "handover": "从线上客服转到车站窗口时，旅客无需再次解释护照姓名顺序、拉丁字符转写或证件换发经过，系统在本人同意下接续已确认的服务上下文",
+    "carry_on": [
+      "证件版本",
+      "核验结果",
+      "购票身份",
+      "行程关联",
+      "多语种求助",
+      "人工处置"
+    ],
+    "require_consent": true,
+    "same_request_across_channels": true
+  },
+  "consent": {
+    "holder": "外籍铁路旅客本人",
+    "scopes": [
+      {
+        "category": "证件版本",
+        "purpose": "接续护照换发后的版本对照，避免旅客重复解释换发经过",
+        "allowed": true
+      },
+      {
+        "category": "核验结果",
+        "purpose": "接续已完成的身份核验结论，避免跨渠道重复核验",
+        "allowed": true
+      },
+      {
+        "category": "购票身份",
+        "purpose": "接续购票所使用的身份及姓名转写记录",
+        "allowed": true
+      },
+      {
+        "category": "行程关联",
+        "purpose": "接续与本次请求相关的车票与行程",
+        "allowed": true
+      },
+      {
+        "category": "多语种求助",
+        "purpose": "接续旅客使用的求助语言和沟通偏好",
+        "allowed": true
+      },
+      {
+        "category": "人工处置",
+        "purpose": "接续客服与窗口已登记的人工处置记录",
+        "allowed": true
+      },
+      {
+        "category": "与本次出行无关的签证资料",
+        "purpose": "不属于本次铁路出行服务所必需",
+        "allowed": false
+      }
+    ],
+    "revocable": true,
+    "on_revocation": "授权撤回后停止跨渠道接续该类别资料，车站窗口仅保留完成当前处置所必需的信息，撤回动作本身记入审计"
+  },
+  "disambiguation": {
+    "rules": [
+      {
+        "case": "姓名近似",
+        "policy": "审慎核对护照姓名顺序与拉丁字符转写，禁止仅凭姓名近似合并旅客档案",
+        "requires_human": true
+      },
+      {
+        "case": "同行家庭",
+        "policy": "审慎区分同行家庭成员各自的证件与车票，家庭关联不得替代本人身份匹配",
+        "requires_human": true
+      },
+      {
+        "case": "跨境行程",
+        "policy": "审慎核验跨境行程涉及的证件版本与票务主体，避免把不同旅客的跨境行程并入同一档案",
+        "requires_human": true
+      },
+      {
+        "case": "离线窗口补录",
+        "policy": "审慎复核离线窗口补录的身份条目，补录档案恢复在线后须与既有核验结果比对，置信度不足不得自动合并",
+        "requires_human": true
+      }
+    ],
+    "confidence_floor": 0.95,
+    "low_confidence_to_human": true
+  },
+  "privacy": {
+    "station_view_minimum": [
+      "当前请求所需的证件版本摘要",
+      "本次行程关联与车票状态",
+      "本人已授权接续的核验结论",
+      "多语种沟通偏好"
+    ],
+    "excluded_data": [
+      "与本次出行无关的签证资料",
+      "授权范围之外的历史服务记录"
+    ],
+    "retention_limit": "接续资料仅保留至本次出行服务结束后的法定最短期限，到期自动清理并留存清理记录",
+    "after_document_update": "证件换发后车站窗口只看到新版本与必要的版本对照摘要，旧证件详细资料不再展示",
+    "after_consent_revoked": "授权撤回后车站窗口只看到完成当前处置所必需的信息，接续通道对该类别关闭"
+  },
+  "audit": {
+    "detectable_risks": [
+      "错误合并",
+      "越权查阅",
+      "超期保留"
+    ],
+    "traceable_from": [
+      "退改结果"
+    ],
+    "trace_targets": [
+      "真实授权",
+      "核验过程"
+    ]
+  }
 }
